@@ -1232,6 +1232,33 @@ function placeOrder() {
   const orders = JSON.parse(localStorage.getItem('3m_orders') || '[]');
   orders.push(order); localStorage.setItem('3m_orders', JSON.stringify(orders));
 
+  // Send order to Google Sheets
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-HQGmy8vQ4WBVNW0D2KKh3G1LUeC9BA6tbuBowmtUPJd66v3Qs0MG5AyHbjLjQB4Bww/exec';
+  const itemsList2 = Object.values(cart).map(v =>
+    `${v.name} x${v.qty} = EGP ${(v.price * v.qty).toLocaleString()}`
+  ).join(' | ');
+  const total2 = Object.values(cart).reduce((s,v) => s + v.price * v.qty, 0);
+  const paymentLabel2 = order.payment === 'cod' ? 'كاش عند الاستلام' : 'Vodafone Cash / InstaPay';
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      orderNum,
+      time: new Date().toLocaleString('ar-EG'),
+      name: order.name,
+      phone: order.phone,
+      gov: order.gov,
+      city: order.city,
+      address: order.address,
+      items: itemsList2,
+      total: 'EGP ' + total2.toLocaleString(),
+      payment: paymentLabel2,
+      notes: order.notes || ''
+    })
+  }).catch(e => console.log('Sheet error:', e));
+
   // Build WhatsApp message
   const itemsList = Object.values(cart).map(v =>
     `• ${v.name} x${v.qty} — EGP ${(v.price * v.qty).toLocaleString()}`
